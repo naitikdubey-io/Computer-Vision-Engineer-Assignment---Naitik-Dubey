@@ -83,7 +83,6 @@ docs/      build log, documentation PDF, screenshots
 
 ## Docs
 
-
 - **[docs/documentation.pdf](docs/documentation.pdf)** — screenshots + explanations (input, code running, detection, output)
 
 ---
