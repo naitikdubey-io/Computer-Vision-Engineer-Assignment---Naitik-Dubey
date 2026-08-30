@@ -1,0 +1,18 @@
+# Source video and extracted frames - regenerate with extract_frames.py.
+# Large and derived from input; the video itself is provided separately
+# (see README) rather than committed.
+data/*.mp4
+data/frames/
+data/frames_hi/
+data/cells/
+
+# Debug/scratch crops produced while iterating
+data/cells/*.png
+
+# Python
+__pycache__/
+*.pyc
+
+# Editor/OS cruft
+.DS_Store
+Thumbs.db
