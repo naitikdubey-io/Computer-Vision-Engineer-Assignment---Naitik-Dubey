@@ -172,22 +172,3 @@ video that's ~5-10s for frame extraction, ~30-60s for the full pipeline.
 Let it finish rather than interrupting.
 
 </details>
-
-<details>
-<summary><b>Recalibrating for a different broadcast graphic</b></summary>
-
-The grid geometry, highlight-state layouts, and glyph templates are all
-specific to this video's graphic.
-
-1. `python calibrate.py --frame <a representative frame>` — click-through
-   tool that measures the grid's column/row boundaries and saves
-   `config/layout.json`.
-2. `python build_templates.py` — bootstraps the glyph template bank from a
-   frame with known ground truth (edit the ground-truth table at the top of
-   the script to match your frame).
-3. If the graphic also shifts layout when a row is highlighted, calibrate
-   each additional state the same way as step 1, saving to
-   `config/layout_<STATE>.json`, and register it in
-   [`src/layout_selector.py`](src/layout_selector.py).
-
-</details>
