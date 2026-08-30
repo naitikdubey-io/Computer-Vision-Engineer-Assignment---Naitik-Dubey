@@ -33,7 +33,7 @@ python extract_frames.py --video ../data/bowling_scoreboard.mp4 --out ../data/fr
 python pipeline.py --frames ../data/frames --out ../output/scorecards.json
 ```
 
-Hitting an error? Check [Troubleshooting](#troubleshooting) below first —
+Hitting an error? Check [Troubleshooting](#user-content-troubleshooting) below first —
 it covers the things most likely to trip up a first run.
 
 ## Output
