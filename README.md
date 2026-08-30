@@ -83,7 +83,7 @@ docs/      build log, documentation PDF, screenshots
 
 ## Docs
 
-- **[docs/BUILD_LOG.md](docs/BUILD_LOG.md)** — full development history: every problem hit, what changed, why
+
 - **[docs/documentation.pdf](docs/documentation.pdf)** — screenshots + explanations (input, code running, detection, output)
 
 ---
