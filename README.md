@@ -71,23 +71,42 @@ The rest of the pipeline exists because the footage kept breaking
 assumptions that seemed safe: the grid isn't pixel-static (the active
 bowler's row grows and highlights), a transient animation intermittently
 covers part of the grid, and the broadcast shows *provisional* totals
-mid-frame. Full account of each problem and its fix is in
-**[docs/BUILD_LOG.md](docs/BUILD_LOG.md)**.
+mid-frame.
+
+## Architecture
+
+Nine stages, each one earned by a real failure mode found in the footage:
 
 ```
-video → extract frames → dedupe → skip non-scoreboard frames
-      → pick layout for current highlight state → mask pin-fall overlay
-      → crop cells → recognize (glyph classifier) → validate → JSON
+video
+  │
+  ├─ extract_frames.py        sample to frames (ffmpeg)
+  ├─ select_stable_frames.py  dedupe near-identical frames, keep sharpest per segment
+  ├─ layout_selector.py       skip non-scoreboard frames (bumpers/cartoons);
+  │                           pick the calibrated layout for whichever row
+  │                           is currently highlighted
+  ├─ overlay.py               mask cells covered by the transient pin-fall
+  │                           animation graphic
+  ├─ grid.py                  crop each cell using the calibrated layout
+  ├─ recognize.py             preprocess each crop (contrast, binarize,
+  │                           cheap blank check)
+  ├─ glyph_classifier.py      recognize each cell — custom template
+  │                           matching, with logic to split touching digits
+  ├─ bowling_rules.py         cross-check the result against scoring rules
+  └─ pipeline.py              orchestrates all of the above
+                                        │
+                                        ▼
+                              output/scorecards.json
 ```
 
 ## Project layout
 
 ```
-src/       pipeline code (see BUILD_LOG.md for what each module solves)
+src/       pipeline code (see Architecture above for what each module does)
 config/    calibrated grid geometry + glyph template bank
 data/      source video + extracted frames (not committed)
 output/    scorecards.json — the result
-docs/      build log, documentation PDF, screenshots
+docs/      documentation PDF, screenshots
 ```
 
 ## Docs
