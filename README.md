@@ -25,6 +25,17 @@ changed and why, and final validation results — is in
 pip install -r requirements.txt
 ```
 
+**If you have more than one Python installed (conda + system Python, multiple
+venvs, etc.), make sure this is the same interpreter you'll actually run
+`python` with below** — `pip install` and `python script.py` silently using
+two different installs is the most common way to hit a `ModuleNotFoundError`
+here despite having "already installed everything." Check with
+`python -c "import sys; print(sys.executable)"` before and after installing
+if you're unsure. If your shell auto-activates a conda environment (prompt
+shows `(base)`) and that environment is the one missing packages, either
+`pip install -r requirements.txt` inside it, or `conda deactivate` and use
+your system Python instead.
+
 If `ffmpeg`/`tesseract` are installed but not resolving on PATH (a common
 issue right after installing on Windows — the current shell's PATH doesn't
 refresh until it's restarted), edit the fallback paths in
@@ -35,15 +46,22 @@ PATH is current.
 ## Usage
 
 The source video isn't committed to this repo (see `.gitignore`) — place it
-at `data/bowling_scoreboard.mp4`, or pass `--video` with any path.
+at `data/bowling_scoreboard.mp4` **exactly that name** (a browser download
+often appends `(1)` or similar if a file with that name already exists in
+your Downloads folder — rename it, or the commands below need adjusting to
+match, and a name with spaces/parentheses will need quoting), or pass
+`--video` with any path.
 
 ```bash
 cd src
 
 # 1. Sample the video into frames (3fps is enough for a scoreboard graphic)
+# ~5-10s
 python extract_frames.py --video ../data/bowling_scoreboard.mp4 --out ../data/frames --fps 3
 
 # 2. Run the full pipeline
+# ~30-60s depending on your machine - it prints nothing until it's done,
+# that's normal, let it finish rather than interrupting
 python pipeline.py --frames ../data/frames --out ../output/scorecards.json
 ```
 
