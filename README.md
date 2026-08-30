@@ -38,6 +38,11 @@ it covers the things most likely to trip up a first run.
 
 ## Output
 
+[`output/scorecards.json`](output/scorecards.json) is committed as-is from
+a real run, so the result is visible without setting anything up — running
+the pipeline yourself regenerates that same file and should match it
+exactly.
+
 One JSON entry per distinct scorecard state found in the video:
 
 ```json
