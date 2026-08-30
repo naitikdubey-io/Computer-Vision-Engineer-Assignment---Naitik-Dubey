@@ -121,7 +121,7 @@ docs/      documentation PDF, screenshots
 ---
 
 <details>
-<summary><b>Troubleshooting</b></summary>
+<summary id="troubleshooting"><b>Troubleshooting</b></summary>
 
 **`ModuleNotFoundError` despite installing requirements** — you likely have
 more than one Python on this machine (conda + system Python, a venv, etc.)
