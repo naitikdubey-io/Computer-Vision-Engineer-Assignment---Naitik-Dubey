@@ -15,6 +15,17 @@ font — see [Approach](#approach)).
 
 ## Quick start
 
+Two external tools first, if you don't already have them:
+
+```bash
+winget install Gyan.FFmpeg UB-Mannheim.TesseractOCR   # Windows
+# macOS:  brew install ffmpeg tesseract
+# Linux:  apt install ffmpeg tesseract-ocr
+```
+
+Then, **in a new terminal** (PATH won't pick up the install above in one
+that's already open):
+
 ```bash
 pip install -r requirements.txt
 cd src
@@ -22,10 +33,8 @@ python extract_frames.py --video ../data/bowling_scoreboard.mp4 --out ../data/fr
 python pipeline.py --frames ../data/frames --out ../output/scorecards.json
 ```
 
-Needs [ffmpeg](https://ffmpeg.org/download.html) and
-[Tesseract](https://github.com/UB-Mannheim/tesseract/wiki) on PATH. Hitting
-an error? Check [Troubleshooting](#troubleshooting) below first — it covers
-the two things most likely to trip up a first run.
+Hitting an error? Check [Troubleshooting](#troubleshooting) below first —
+it covers the things most likely to trip up a first run.
 
 ## Output
 
@@ -98,10 +107,12 @@ installing. If your prompt shows `(base)`, either `pip install -r
 requirements.txt` inside that conda env, or `conda deactivate` and use your
 system Python.
 
-**ffmpeg/tesseract "not found" right after installing** — Windows shells
-cache PATH until restarted. Either open a fresh terminal, or edit the
-fallback paths in [`src/tool_paths.py`](src/tool_paths.py) to point at your
-install locations directly.
+**ffmpeg/tesseract "not found"** — [`src/tool_paths.py`](src/tool_paths.py)
+checks PATH plus a few common install locations automatically, so this
+usually means one of them genuinely isn't installed yet (see Quick start
+above), or a fresh terminal hasn't been opened since installing (Windows
+shells cache PATH until restarted). If it's installed somewhere unusual,
+add that path to `_FFMPEG_PATTERNS` / `_TESSERACT_PATTERNS` in that file.
 
 **Video file not found** — it needs to be at `data/bowling_scoreboard.mp4`
 exactly. Browser downloads often append `(1)` if a file with that name
