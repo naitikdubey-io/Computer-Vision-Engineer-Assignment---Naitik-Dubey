@@ -15,26 +15,50 @@ font — see [Approach](#approach)).
 
 ## Quick start
 
-Two external tools first, if you don't already have them:
+**1. Get the code**
 
 ```bash
-winget install Gyan.FFmpeg UB-Mannheim.TesseractOCR   # Windows
-# macOS:  brew install ffmpeg tesseract
-# Linux:  apt install ffmpeg tesseract-ocr
+git clone https://github.com/naitikdubey-io/Computer-Vision-Engineer-Assignment---Naitik-Dubey.git
+cd Computer-Vision-Engineer-Assignment---Naitik-Dubey
 ```
 
-Then, **in a new terminal** (PATH won't pick up the install above in one
-that's already open):
+**2. Install ffmpeg and Tesseract** — two external tools the pipeline shells
+out to, not Python packages, so `pip` alone won't get them:
+
+```bash
+winget install Gyan.FFmpeg UB-Mannheim.TesseractOCR
+```
+*(macOS: `brew install ffmpeg tesseract` — Linux: `apt install ffmpeg tesseract-ocr`)*
+
+**3. Open a new terminal.** This matters: a terminal already open when you
+installed step 2 won't see the update. Do everything below in a fresh one.
+
+**4. Install the Python dependencies**
 
 ```bash
 pip install -r requirements.txt
+```
+
+**5. Add the video.** Place it at `data/bowling_scoreboard.mp4` — exactly
+that name, in the `data` folder.
+
+**6. Extract frames from the video** — samples it down to a few frames per
+second, since a scoreboard graphic doesn't change every frame:
+
+```bash
 cd src
 python extract_frames.py --video ../data/bowling_scoreboard.mp4 --out ../data/frames --fps 3
+```
+
+**7. Run the pipeline** — reads those frames and writes the extracted data:
+
+```bash
 python pipeline.py --frames ../data/frames --out ../output/scorecards.json
 ```
 
-Hitting an error? Check [Troubleshooting](#user-content-troubleshooting) below first —
-it covers the things most likely to trip up a first run.
+That's it — check `output/scorecards.json` for the result. Hitting an
+error? [Troubleshooting](#user-content-troubleshooting) below covers the
+things most likely to trip up a first run.
 
 ## Output
 
