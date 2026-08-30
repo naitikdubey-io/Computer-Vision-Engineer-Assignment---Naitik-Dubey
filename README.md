@@ -1,79 +1,38 @@
-# Bowling Scoreboard Extraction
+# 🎳 Bowling Scoreboard Extraction
 
-Extracts structured scorecard data — per-frame rolls, running totals, player
-names, and lane number — from broadcast video of a bowling scoreboard.
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![OpenCV](https://img.shields.io/badge/opencv-4.9%2B-5C3EE8)
+![Status](https://img.shields.io/badge/status-validated-brightgreen)
 
-Built for one specific broadcast graphic rather than bowling scoreboards in
-general: the pipeline is calibrated against this graphic's exact grid
-geometry and font, and recognizes characters with a small template-matching
-classifier trained on that font, rather than general-purpose OCR (which
-misreads it — see [Approach](#approach) below).
+Pulls structured data — per-frame rolls, running totals, player names, lane
+number — out of broadcast video of a bowling scoreboard, using a custom
+glyph classifier instead of general OCR (which misreads this broadcast's
+font — see [Approach](#approach)).
 
-A full build log — the approach, every problem hit along the way, what
-changed and why, and final validation results — is in
-[`docs/BUILD_LOG.md`](docs/BUILD_LOG.md).
+<img src="docs/screenshots/03_detected_grid.png" width="720" alt="Calibrated grid detected on a real input frame">
 
-## Requirements
+*The calibrated cell grid detected on a real frame from the source video.*
 
-- Python 3.10+
-- [ffmpeg](https://ffmpeg.org/download.html) on PATH (frame extraction)
-- [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) on PATH
-  (used only for the free-text player-name field; all score/symbol/lane
-  recognition uses the custom classifier)
+## Quick start
 
 ```bash
 pip install -r requirements.txt
-```
-
-**If you have more than one Python installed (conda + system Python, multiple
-venvs, etc.), make sure this is the same interpreter you'll actually run
-`python` with below** — `pip install` and `python script.py` silently using
-two different installs is the most common way to hit a `ModuleNotFoundError`
-here despite having "already installed everything." Check with
-`python -c "import sys; print(sys.executable)"` before and after installing
-if you're unsure. If your shell auto-activates a conda environment (prompt
-shows `(base)`) and that environment is the one missing packages, either
-`pip install -r requirements.txt` inside it, or `conda deactivate` and use
-your system Python instead.
-
-If `ffmpeg`/`tesseract` are installed but not resolving on PATH (a common
-issue right after installing on Windows — the current shell's PATH doesn't
-refresh until it's restarted), edit the fallback paths in
-[`src/tool_paths.py`](src/tool_paths.py) to point at your install locations;
-the scripts locate the binaries through that module rather than assuming
-PATH is current.
-
-## Usage
-
-The source video isn't committed to this repo (see `.gitignore`) — place it
-at `data/bowling_scoreboard.mp4` **exactly that name** (a browser download
-often appends `(1)` or similar if a file with that name already exists in
-your Downloads folder — rename it, or the commands below need adjusting to
-match, and a name with spaces/parentheses will need quoting), or pass
-`--video` with any path.
-
-```bash
 cd src
-
-# 1. Sample the video into frames (3fps is enough for a scoreboard graphic)
-# ~5-10s
 python extract_frames.py --video ../data/bowling_scoreboard.mp4 --out ../data/frames --fps 3
-
-# 2. Run the full pipeline
-# ~30-60s depending on your machine - it prints nothing until it's done,
-# that's normal, let it finish rather than interrupting
 python pipeline.py --frames ../data/frames --out ../output/scorecards.json
 ```
 
-Output is one JSON entry per distinct scorecard state found in the video —
-not one per frame, since the pipeline first collapses long runs of
-visually-identical frames down to a single representative one (see
-[Architecture](#architecture)). Each entry looks like:
+Needs [ffmpeg](https://ffmpeg.org/download.html) and
+[Tesseract](https://github.com/UB-Mannheim/tesseract/wiki) on PATH. Hitting
+an error? Check [Troubleshooting](#troubleshooting) below first — it covers
+the two things most likely to trip up a first run.
+
+## Output
+
+One JSON entry per distinct scorecard state found in the video:
 
 ```json
 {
-  "frame_file": "..\\data\\frames\\frame_000001.png",
-  "state": "none",
   "lane": "6",
   "name": "TARUN",
   "players": {
@@ -87,16 +46,80 @@ visually-identical frames down to a single representative one (see
 }
 ```
 
-`validation_issues` flags anything a cross-check against bowling scoring
-rules found suspect (a non-monotonic running total, a TTL that doesn't
-match the latest frame or a known provisional-total pattern) — a non-empty
-entry means "look at this one," not necessarily "this is wrong."
+`validation_issues` flags anything a bowling-scoring cross-check found
+suspect — a non-empty entry means "look at this one," not necessarily wrong.
 
-### Recalibrating for a different broadcast graphic
+## Approach
+
+General OCR (Tesseract) was tried first and rejected — it misread this
+broadcast's font consistently, reading a clean `9` as nothing at all in
+every mode tried. Since the vocabulary is tiny (digits, `X`, `/`, `-`) and
+the font is fixed, a small **template-matching classifier** trained on
+glyphs from this video's own footage turned out simpler and far more
+accurate.
+
+The rest of the pipeline exists because the footage kept breaking
+assumptions that seemed safe: the grid isn't pixel-static (the active
+bowler's row grows and highlights), a transient animation intermittently
+covers part of the grid, and the broadcast shows *provisional* totals
+mid-frame. Full account of each problem and its fix is in
+**[docs/BUILD_LOG.md](docs/BUILD_LOG.md)**.
+
+```
+video → extract frames → dedupe → skip non-scoreboard frames
+      → pick layout for current highlight state → mask pin-fall overlay
+      → crop cells → recognize (glyph classifier) → validate → JSON
+```
+
+## Project layout
+
+```
+src/       pipeline code (see BUILD_LOG.md for what each module solves)
+config/    calibrated grid geometry + glyph template bank
+data/      source video + extracted frames (not committed)
+output/    scorecards.json — the result
+docs/      build log, documentation PDF, screenshots
+```
+
+## Docs
+
+- **[docs/BUILD_LOG.md](docs/BUILD_LOG.md)** — full development history: every problem hit, what changed, why
+- **[docs/documentation.pdf](docs/documentation.pdf)** — screenshots + explanations (input, code running, detection, output)
+
+---
+
+<details>
+<summary><b>Troubleshooting</b></summary>
+
+**`ModuleNotFoundError` despite installing requirements** — you likely have
+more than one Python on this machine (conda + system Python, a venv, etc.)
+and `pip install` went to a different one than `python` is running. Check
+with `python -c "import sys; print(sys.executable)"` before and after
+installing. If your prompt shows `(base)`, either `pip install -r
+requirements.txt` inside that conda env, or `conda deactivate` and use your
+system Python.
+
+**ffmpeg/tesseract "not found" right after installing** — Windows shells
+cache PATH until restarted. Either open a fresh terminal, or edit the
+fallback paths in [`src/tool_paths.py`](src/tool_paths.py) to point at your
+install locations directly.
+
+**Video file not found** — it needs to be at `data/bowling_scoreboard.mp4`
+exactly. Browser downloads often append `(1)` if a file with that name
+already exists in Downloads — rename it, or a name with spaces/parentheses
+will need quoting in every command.
+
+**Pipeline seems to hang** — it prints nothing until finished. On this
+video that's ~5-10s for frame extraction, ~30-60s for the full pipeline.
+Let it finish rather than interrupting.
+
+</details>
+
+<details>
+<summary><b>Recalibrating for a different broadcast graphic</b></summary>
 
 The grid geometry, highlight-state layouts, and glyph templates are all
-specific to this video's graphic. To point the pipeline at a different
-broadcast:
+specific to this video's graphic.
 
 1. `python calibrate.py --frame <a representative frame>` — click-through
    tool that measures the grid's column/row boundaries and saves
@@ -104,71 +127,9 @@ broadcast:
 2. `python build_templates.py` — bootstraps the glyph template bank from a
    frame with known ground truth (edit the ground-truth table at the top of
    the script to match your frame).
-3. If the graphic also shifts layout when a row is highlighted (as this one
-   does), calibrate each additional state the same way as step 1, saving to
+3. If the graphic also shifts layout when a row is highlighted, calibrate
+   each additional state the same way as step 1, saving to
    `config/layout_<STATE>.json`, and register it in
    [`src/layout_selector.py`](src/layout_selector.py).
 
-## Architecture
-
-```
-video
-  -> extract_frames.py       sample to frames (ffmpeg)
-  -> select_stable_frames.py dedupe near-identical frames, keep sharpest per segment
-  -> layout_selector.py      skip non-scoreboard frames (bumpers/cartoons);
-                              pick the right calibrated layout for whichever
-                              row is currently highlighted
-  -> overlay.py               mask cells covered by the transient pin-fall
-                              animation graphic
-  -> grid.py                  crop each cell using the calibrated layout
-  -> recognize.py             preprocess each crop (contrast, binarize,
-                              cheap blank check)
-  -> glyph_classifier.py      recognize each cell — custom template matching,
-                              with logic to split touching/merged digits
-  -> bowling_rules.py         cross-check the result against scoring rules
-  -> output/scorecards.json
-```
-
-## Approach
-
-General OCR (Tesseract) was tried first and rejected: it misread this
-broadcast's stylized font consistently — a clean, unambiguous `9` read as
-nothing at all, in every page-segmentation mode tried. Since the actual
-character vocabulary on the board is tiny (digits, `X`, `/`, `-`) and the
-font is fixed (rendered by broadcast graphics software, not photographed),
-a small template-matching classifier trained on glyphs pulled from this
-video's own footage turned out to be both simpler and dramatically more
-accurate.
-
-The rest of the pipeline exists because the footage kept violating
-assumptions that seemed safe at first: the grid isn't pixel-static (the
-active bowler's row grows and highlights, shifting every row below it), a
-transient animation intermittently covers part of the grid at an unpredictable
-position, and the broadcast graphic shows *provisional* totals mid-frame
-that look like errors until you know the pattern. The full account of each
-of these, and how they were diagnosed and fixed, is in the build log.
-
-## Project structure
-
-```
-src/
-  extract_frames.py        ffmpeg wrapper - samples the video into frames
-  select_stable_frames.py  dedupes near-identical frames
-  layout_selector.py       scoreboard gate + highlight-state detection
-  overlay.py                detects/masks the pin-fall animation
-  grid.py                    turns a calibrated layout into per-cell pixel boxes
-  recognize.py               preprocessing: contrast, binarization, blank check
-  glyph_classifier.py        the custom recognizer + digit-split logic
-  bowling_rules.py           cross-validation against scoring rules
-  pipeline.py                 orchestrates all of the above
-  calibrate.py, auto_grid.py, build_templates.py, tool_paths.py
-                              calibration & setup utilities
-
-config/
-  layout.json, layout_J.json, layout_V.json   calibrated grid geometry per state
-  templates/                                   glyph template bank
-
-data/    source video + extracted frames (not committed - see .gitignore)
-output/  scorecards.json - the final structured result
-docs/    build log / documentation
-```
+</details>
